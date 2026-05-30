@@ -114,74 +114,87 @@ class SpamAccessibilityService : AccessibilityService() {
 
     // Displays the floating panel
     private fun showOverlay() {
+        if (!android.provider.Settings.canDrawOverlays(this)) {
+            SpamState.isOverlayVisible.value = false
+            return
+        }
         if (overlayView != null) return
 
-        lifecycleOwner = MyLifecycleOwner().apply {
-            onCreate()
-            onStart()
-        }
+        try {
+            lifecycleOwner = MyLifecycleOwner().apply {
+                onCreate()
+                onStart()
+            }
 
-        val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-        } else {
-            @Suppress("DEPRECATION")
-            WindowManager.LayoutParams.TYPE_PHONE
-        }
+            val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            } else {
+                @Suppress("DEPRECATION")
+                WindowManager.LayoutParams.TYPE_PHONE
+            }
 
-        // We match WRAP_CONTENT to keep the floating view neat and tiny
-        overlayParams = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            type,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-            PixelFormat.TRANSLUCENT
-        ).apply {
-            gravity = Gravity.TOP or Gravity.START
-            x = 100
-            y = 300
-        }
+            // We match WRAP_CONTENT to keep the floating view neat and tiny
+            overlayParams = WindowManager.LayoutParams(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                type,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                PixelFormat.TRANSLUCENT
+            ).apply {
+                gravity = Gravity.TOP or Gravity.START
+                x = 100
+                y = 300
+            }
 
-        val composeView = ComposeView(this).apply {
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-            setContent {
-                MaterialTheme(
-                    colorScheme = darkColorScheme(
-                        primary = Color(0xFFE040FB),
-                        secondary = Color(0xFF00E5FF),
-                        surface = Color(0xFF1E1E2E)
-                    )
-                ) {
-                    FloatingPanelContent(
-                        onDrag = { dx, dy ->
-                            overlayParams.x += dx.toInt()
-                            overlayParams.y += dy.toInt()
-                            if (overlayView != null) {
-                                windowManager.updateViewLayout(overlayView, overlayParams)
+            val composeView = ComposeView(this).apply {
+                setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+                setContent {
+                    MaterialTheme(
+                        colorScheme = darkColorScheme(
+                            primary = Color(0xFFE040FB),
+                            secondary = Color(0xFF00E5FF),
+                            surface = Color(0xFF1E1E2E)
+                        )
+                    ) {
+                        FloatingPanelContent(
+                            onDrag = { dx, dy ->
+                                overlayParams.x += dx.toInt()
+                                overlayParams.y += dy.toInt()
+                                if (overlayView != null) {
+                                    try {
+                                        windowManager.updateViewLayout(overlayView, overlayParams)
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                    }
+                                }
+                            },
+                            onClose = {
+                                SpamState.isOverlayVisible.value = false
+                            },
+                            onStartMarking = {
+                                startMarkingCountdown()
+                            },
+                            onFocusChanged = { focusable ->
+                                updateFocusable(focusable)
                             }
-                        },
-                        onClose = {
-                            SpamState.isOverlayVisible.value = false
-                        },
-                        onStartMarking = {
-                            startMarkingCountdown()
-                        },
-                        onFocusChanged = { focusable ->
-                            updateFocusable(focusable)
-                        }
-                    )
+                        )
+                    }
                 }
             }
-        }
 
-        // Set lifecycle tree components
-        lifecycleOwner?.let { owner ->
-            composeView.setViewTreeLifecycleOwner(owner)
-            composeView.setViewTreeViewModelStoreOwner(owner)
-            composeView.setViewTreeSavedStateRegistryOwner(owner)
-        }
+            // Set lifecycle tree components
+            lifecycleOwner?.let { owner ->
+                composeView.setViewTreeLifecycleOwner(owner)
+                composeView.setViewTreeViewModelStoreOwner(owner)
+                composeView.setViewTreeSavedStateRegistryOwner(owner)
+            }
 
-        overlayView = composeView
-        windowManager.addView(overlayView, overlayParams)
+            overlayView = composeView
+            windowManager.addView(overlayView, overlayParams)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            SpamState.isOverlayVisible.value = false
+        }
     }
 
     private fun hideOverlay() {
@@ -463,6 +476,15 @@ class MyLifecycleOwner : LifecycleOwner, ViewModelStoreOwner, SavedStateRegistry
     private val store = ViewModelStore()
     private val controller = SavedStateRegistryController.create(this)
 
+    override val lifecycle: Lifecycle
+        get() = lifecycleRegistry
+
+    override val viewModelStore: ViewModelStore
+        get() = store
+
+    override val savedStateRegistry: SavedStateRegistry
+        get() = controller.savedStateRegistry
+
     init {
         controller.performAttach()
         controller.performRestore(null)
@@ -482,10 +504,6 @@ class MyLifecycleOwner : LifecycleOwner, ViewModelStoreOwner, SavedStateRegistry
         lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
         store.clear()
     }
-
-    override val lifecycle: Lifecycle = lifecycleRegistry
-    override val viewModelStore: ViewModelStore = store
-    override val savedStateRegistry: SavedStateRegistry = controller.savedStateRegistry
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
