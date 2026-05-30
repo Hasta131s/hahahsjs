@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Spam Asistanı</string>
+    <string name="accessibility_desc">Spam Asistanı koordinat bazlı tıklama ve otomatik metin yazma işlemleri için bu servisi kullanır.</string>
+</resources>

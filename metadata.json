@@ -1,0 +1,6 @@
+{
+  "name": "Spam Asistanı",
+  "description": "Koordinat tabanlı tıklama yapma, otomatik metin girişi yapma ve yüzen panel ile spam kontrolü sağlayan erişilebilirlik asistanı.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
