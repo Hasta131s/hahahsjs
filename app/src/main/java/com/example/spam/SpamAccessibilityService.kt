@@ -24,7 +24,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -70,7 +73,17 @@ class SpamAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        showOverlay()
+        
+        // Listen to state changes for overlay visibility
+        serviceScope.launch {
+            SpamState.isOverlayVisible.collectLatest { visible ->
+                if (visible) {
+                    showOverlay()
+                } else {
+                    hideOverlay()
+                }
+            }
+        }
         
         // Listen to state changes
         serviceScope.launch {
@@ -147,7 +160,7 @@ class SpamAccessibilityService : AccessibilityService() {
                             }
                         },
                         onClose = {
-                            stopSelf()
+                            SpamState.isOverlayVisible.value = false
                         },
                         onStartMarking = {
                             startMarkingCountdown()
@@ -451,8 +464,9 @@ class MyLifecycleOwner : LifecycleOwner, ViewModelStoreOwner, SavedStateRegistry
     private val controller = SavedStateRegistryController.create(this)
 
     init {
-        lifecycleRegistry.currentState = Lifecycle.State.INITIALIZED
+        controller.performAttach()
         controller.performRestore(null)
+        lifecycleRegistry.currentState = Lifecycle.State.INITIALIZED
     }
 
     fun onCreate() {
@@ -499,14 +513,15 @@ fun FloatingPanelContent(
 
     Card(
         modifier = Modifier
-            .width(280.dp)
-            .padding(8.dp),
+            .width(282.dp)
+            .padding(4.dp),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xEB161622)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF2B2930)), // Deep Charcoal Polish background
+        border = BorderStroke(1.dp, Color(0xFF49454F)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 16.dp)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            // Drag and Title Bar
+        Column(modifier = Modifier.padding(14.dp)) {
+            // Drag Header Row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -516,239 +531,262 @@ fun FloatingPanelContent(
                             onDrag(dragAmount.x, dragAmount.y)
                         }
                     }
-                    .background(
-                        Brush.horizontalGradient(
-                            listOf(
-                                Color(0xFFE040FB),
-                                Color(0xFF00E5FF)
-                            )
-                        ),
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                    .padding(horizontal = 8.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(bottom = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Icon(
-                    imageVector = Icons.Default.Menu,
-                    contentDescription = "Sürükle",
-                    tint = Color.White,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "Spam Panel",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 13.sp,
-                    color = Color.White,
-                    modifier = Modifier.weight(1f)
-                )
-                IconButton(
-                    onClick = {
-                        onFocusChanged(!isKeyboardActive)
-                        isKeyboardActive = !isKeyboardActive
-                    },
-                    modifier = Modifier.size(24.dp)
-                ) {
-                    Icon(
-                        imageVector = if (isKeyboardActive) Icons.Default.Lock else Icons.Default.Lock,
-                        contentDescription = "Klavye Odağı",
-                        tint = if (isKeyboardActive) Color(0xFF00E5FF) else Color.White,
-                        modifier = Modifier.size(16.dp)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .background(if (isRunning) Color(0xFF4CAF50) else Color(0xFFFF9800), shape = CircleShape)
                     )
-                }
-                Spacer(modifier = Modifier.width(4.dp))
-                IconButton(
-                    onClick = onClose,
-                    modifier = Modifier.size(24.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Kapat",
-                        tint = Color.White,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Text to Spam input
-            TextField(
-                value = textInput,
-                onValueChange = {
-                    textInput = it
-                    SpamState.spamText.value = it
-                },
-                label = { Text("Spam Metni", fontSize = 11.sp) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions.Default,
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color(0x33000000),
-                    unfocusedContainerColor = Color(0x1A000000),
-                    focusedIndicatorColor = Color(0xFFE040FB),
-                    unfocusedIndicatorColor = Color.Transparent,
-                    focusedLabelColor = Color(0xFFE040FB),
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.LightGray
-                ),
-                textStyle = LocalTextStyle.current.copy(fontSize = 12.sp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp)
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Spam inputs (Count and Interval)
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextField(
-                    value = countInput,
-                    onValueChange = {
-                        countInput = it
-                        it.toIntOrNull()?.let { num ->
-                            SpamState.spamCount.value = num
-                        }
-                    },
-                    label = { Text("Tekrar", fontSize = 10.sp) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color(0x33000000),
-                        unfocusedContainerColor = Color(0x1A000000),
-                        focusedIndicatorColor = Color(0xFF00E5FF),
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.LightGray
-                    ),
-                    textStyle = LocalTextStyle.current.copy(fontSize = 12.sp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(54.dp)
-                )
-
-                TextField(
-                    value = intervalInput,
-                    onValueChange = {
-                        intervalInput = it
-                        it.toLongOrNull()?.let { time ->
-                            SpamState.spamIntervalMs.value = time
-                        }
-                    },
-                    label = { Text("Hız (ms)", fontSize = 10.sp) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color(0x33000000),
-                        unfocusedContainerColor = Color(0x1A000000),
-                        focusedIndicatorColor = Color(0xFF00E5FF),
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.LightGray
-                    ),
-                    textStyle = LocalTextStyle.current.copy(fontSize = 12.sp),
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(54.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Marking Target button
-            Button(
-                onClick = onStartMarking,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isMarkingMode) Color(0xFFFF5252) else Color(0x3300E5FF)
-                ),
-                contentPadding = PaddingValues(vertical = 4.dp, horizontal = 12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(36.dp),
-                shape = RoundedCornerShape(10.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = Color.White
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = if (isMarkingMode) "Hedefe Dokun ($countdown)" else "Metin Alanını İşaretle",
-                    fontSize = 12.sp,
-                    color = Color.White,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
-            targetX?.let { tx ->
-                targetY?.let { ty ->
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Konum: (${tx.toInt()}, ${ty.toInt()})",
+                        text = "SWIFT PANEL",
+                        fontWeight = FontWeight.Black,
                         fontSize = 11.sp,
-                        color = Color(0xFF00E5FF),
-                        modifier = Modifier.align(Alignment.CenterHorizontally),
-                        fontWeight = FontWeight.Medium
+                        color = Color.White,
+                        letterSpacing = 1.sp
                     )
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Keyboard Focus Toggle icon
+                    IconButton(
+                        onClick = {
+                            onFocusChanged(!isKeyboardActive)
+                            isKeyboardActive = !isKeyboardActive
+                        },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = "Klavye Odak Kontrolü",
+                            tint = if (isKeyboardActive) Color(0xFFD0BCFF) else Color(0xFF938F99),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(4.dp))
+                    // Close icon
+                    IconButton(
+                        onClick = onClose,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Kapat",
+                            tint = Color(0xFFE6E1E5),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            // Input Fields area
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                // Text Field Input
+                TextField(
+                    value = textInput,
+                    onValueChange = {
+                        textInput = it
+                        SpamState.spamText.value = it
+                    },
+                    placeholder = { Text("Spam kelimesi girin...", color = Color(0xFF938F99), fontSize = 12.sp) },
+                    singleLine = true,
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color(0xFF49454F),
+                        unfocusedContainerColor = Color(0xFF49454F),
+                        focusedIndicatorColor = Color(0xFFD0BCFF),
+                        unfocusedIndicatorColor = Color.Transparent,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = Color(0xFFD0BCFF)
+                    ),
+                    textStyle = LocalTextStyle.current.copy(fontSize = 12.sp),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                )
 
-            // Control Buttons
+                // Repeat Count, Speed Input & Mark Button Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Loop Count Field
+                    Row(
+                        modifier = Modifier
+                            .weight(1.3f)
+                            .height(44.dp)
+                            .background(Color(0xFF49454F), shape = RoundedCornerShape(10.dp))
+                            .padding(horizontal = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "ADET:",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF938F99)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        BasicTextField(
+                            value = countInput,
+                            onValueChange = { newVal ->
+                                countInput = newVal
+                                newVal.toIntOrNull()?.let { num ->
+                                    SpamState.spamCount.value = num
+                                }
+                            },
+                            textStyle = LocalTextStyle.current.copy(
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    // Interval (ms) field
+                    Row(
+                        modifier = Modifier
+                            .weight(1.3f)
+                            .height(44.dp)
+                            .background(Color(0xFF49454F), shape = RoundedCornerShape(10.dp))
+                            .padding(horizontal = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "HIZ:",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF938F99)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        BasicTextField(
+                            value = intervalInput,
+                            onValueChange = { newVal ->
+                                intervalInput = newVal
+                                newVal.toLongOrNull()?.let { time ->
+                                    SpamState.spamIntervalMs.value = time
+                                }
+                            },
+                            textStyle = LocalTextStyle.current.copy(
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    // Mark Target button (Coordinates pick)
+                    Button(
+                        onClick = onStartMarking,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isMarkingMode) Color(0xFFFF5252) else Color(0xFFD0BCFF)
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(0.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp)
+                    ) {
+                        Text(
+                            text = if (isMarkingMode) "$countdown s" else "İŞARETLE",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isMarkingMode) Color.White else Color(0xFF381E72)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Start & Stop triggers row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // START
+                // START (BAŞLAT)
                 Button(
                     onClick = {
                         SpamState.isRunning.value = true
                     },
                     enabled = !isRunning,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF4CAF50),
-                        disabledContainerColor = Color(0x334CAF50)
+                        containerColor = Color(0xFF6750A4),
+                        disabledContainerColor = Color(0x336750A4)
                     ),
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(0.dp),
                     modifier = Modifier
-                        .weight(1f)
-                        .height(38.dp),
-                    shape = RoundedCornerShape(10.dp),
-                    contentPadding = PaddingValues(0.dp)
+                        .weight(1.8f)
+                        .height(42.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.PlayArrow,
-                        contentDescription = "Başlat",
-                        tint = Color.White,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Başlat", fontSize = 12.sp, color = Color.White)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = "Başlat",
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "BAŞLAT",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
                 }
 
-                // STOP
+                // STOP (DURDUR)
                 Button(
                     onClick = {
                         SpamState.isRunning.value = false
                     },
                     enabled = isRunning,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFF44336),
-                        disabledContainerColor = Color(0x33F44336)
+                        containerColor = Color(0xFF49454F),
+                        disabledContainerColor = Color(0x2249454F)
                     ),
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(0.dp),
                     modifier = Modifier
                         .weight(1f)
-                        .height(38.dp),
-                    shape = RoundedCornerShape(10.dp),
-                    contentPadding = PaddingValues(0.dp)
+                        .height(42.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Refresh,
                         contentDescription = "Durdur",
-                        tint = Color.White,
+                        tint = if (isRunning) Color(0xFFE6E1E5) else Color(0x66E6E1E5),
                         modifier = Modifier.size(18.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Durdur", fontSize = 12.sp, color = Color.White)
+                }
+            }
+
+            // Bottom Coordinate Label
+            targetX?.let { tx ->
+                targetY?.let { ty ->
+                    Spacer(modifier = Modifier.height(12.dp))
+                    HorizontalDivider(color = Color(0xFF49454F))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "HEDEF: X:${tx.toInt()}, Y:${ty.toInt()}",
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF938F99),
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
                 }
             }
         }

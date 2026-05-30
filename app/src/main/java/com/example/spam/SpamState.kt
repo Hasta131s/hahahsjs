@@ -14,4 +14,5 @@ object SpamState {
     val countdownSeconds = MutableStateFlow(0)
     
     val isServiceRunning = MutableStateFlow(false)
+    val isOverlayVisible = MutableStateFlow(false)
 }

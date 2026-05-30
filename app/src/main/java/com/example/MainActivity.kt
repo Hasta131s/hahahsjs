@@ -57,18 +57,123 @@ class MainActivity : ComponentActivity() {
     private var isAccessibilityEnabledState = mutableStateOf(false)
 
     private fun checkPermissions() {
-        hasOverlayPermissionState.value = Settings.canDrawOverlays(this)
-        isAccessibilityEnabledState.value = isAccessibilityServiceEnabled(this, SpamAccessibilityService::class.java)
+        val overlay = Settings.canDrawOverlays(this)
+        val accessibility = isAccessibilityServiceEnabled(this, SpamAccessibilityService::class.java)
+        
+        if (overlay && accessibility && !(hasOverlayPermissionState.value && isAccessibilityEnabledState.value)) {
+            SpamState.isOverlayVisible.value = true
+        }
+        
+        hasOverlayPermissionState.value = overlay
+        isAccessibilityEnabledState.value = accessibility
     }
 
     override fun onStart() {
         super.onStart()
         checkPermissions()
         setContent {
-            MyApplicationTheme {
+            MyApplicationTheme(dynamicColor = false) {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
-                    containerColor = Color(0xFF0F0F1A) // Space Slate background
+                    containerColor = Color(0xFFFEF7FF), // Professional Polish light surface
+                    topBar = {
+                        Column {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color(0xFFFEF7FF))
+                                    .statusBarsPadding()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .background(Color(0xFF6750A4), shape = RoundedCornerShape(12.dp)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Send,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(
+                                        text = "Spam Asistanı",
+                                        fontSize = 20.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF1D1B20),
+                                        letterSpacing = (-0.5).sp
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { },
+                                    modifier = Modifier.size(40.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.MoreVert,
+                                        contentDescription = "Daha Fazla",
+                                        tint = Color(0xFF1D1B20)
+                                    )
+                                }
+                            }
+                            HorizontalDivider(color = Color(0xFFEADDFF))
+                        }
+                    },
+                    bottomBar = {
+                        Column {
+                            HorizontalDivider(color = Color(0xFFEADDFF))
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color(0xFFF3EDF7))
+                                    .navigationBarsPadding()
+                                    .height(64.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceAround
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Box(
+                                        modifier = Modifier
+                                            .background(Color(0xFFEADDFF), shape = RoundedCornerShape(16.dp))
+                                            .padding(horizontal = 16.dp, vertical = 4.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Home,
+                                            contentDescription = "Ana Sayfa",
+                                            tint = Color(0xFF6750A4),
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    }
+                                    Text("Ana Sayfa", fontSize = 11.sp, color = Color(0xFF6750A4), fontWeight = FontWeight.Bold)
+                                }
+
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(
+                                        imageVector = Icons.Default.Settings,
+                                        contentDescription = "Ayarlar",
+                                        tint = Color(0xFF49454F),
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                    Text("Ayarlar", fontSize = 11.sp, color = Color(0xFF49454F))
+                                }
+
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(
+                                        imageVector = Icons.Default.Info,
+                                        contentDescription = "Rehber",
+                                        tint = Color(0xFF49454F),
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                    Text("Rehber", fontSize = 11.sp, color = Color(0xFF49454F))
+                                }
+                            }
+                        }
+                    }
                 ) { innerPadding ->
                     MainDashboardScreen(
                         hasOverlayPermission = hasOverlayPermissionState.value,
@@ -128,76 +233,112 @@ fun MainDashboardScreen(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(scrollState)
-            .padding(24.dp),
+            .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-        // Branding Logo / Header
+        // Branding Header (M3 look)
         Box(
             modifier = Modifier
-                .size(80.dp)
-                .background(
-                    Brush.radialGradient(
-                        listOf(
-                            Color(0xFFE040FB),
-                            Color(0x00E040FB)
-                        )
-                    ),
-                    shape = CircleShape
-                )
-                .border(2.dp, Color(0xFF00E5FF), CircleShape),
+                .size(72.dp)
+                .background(Color(0xFFF7F2FA), shape = CircleShape)
+                .border(1.dp, Color(0xFFEADDFF), CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.Send,
                 contentDescription = null,
-                tint = Color(0xFF00E5FF),
-                modifier = Modifier.size(36.dp)
+                tint = Color(0xFF6750A4),
+                modifier = Modifier.size(32.dp)
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
         Text(
-            text = "SPAM ASİSTANI",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.ExtraBold,
-            color = Color.White,
-            letterSpacing = 2.sp,
-            fontFamily = FontFamily.SansSerif
+            text = "SwiftSpammer Asistanı",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF1D1B20),
+            letterSpacing = (-0.5).sp
         )
 
         Text(
-            text = "Erişilebilirlik ve Otomasyon Asistanı",
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            color = Color(0xFF00E5FF),
-            textAlign = TextAlign.Center
+            text = "Arka planda çalışan koordinat bazlı tıklayıcı ve otomatik yapıştırıcı",
+            fontSize = 12.sp,
+            color = Color(0xFF49454F),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 16.dp)
         )
 
-        Spacer(modifier = Modifier.height(28.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        // Permission list card
+        // Session Stats Row (Extracted from Design HTML)
+        Text(
+            text = "OTURUM İSTATİSTİKLERİ",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF6750A4),
+            letterSpacing = 1.sp,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp)
+        )
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Stat 1
+            Surface(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(16.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFEADDFF))
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Text(text = "TOPLAM GÖNDERİM", fontSize = 10.sp, color = Color(0xFF49454F), fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(text = "14,204", fontSize = 22.sp, fontWeight = FontWeight.Black, color = Color(0xFF6750A4))
+                }
+            }
+
+            // Stat 2
+            Surface(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(16.dp),
+                color = Color.White,
+                border = BorderStroke(1.dp, Color(0xFFEADDFF))
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Text(text = "AKTİF SÜRE", fontSize = 10.sp, color = Color(0xFF49454F), fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(text = "02:45", fontSize = 22.sp, fontWeight = FontWeight.Black, color = Color(0xFF6750A4))
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Requirements/Permissions Section
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            color = Color(0xFF1E1E2E),
-            tonalElevation = 6.dp
+            shape = RoundedCornerShape(24.dp),
+            color = Color(0xFFF7F2FA),
+            border = BorderStroke(1.dp, Color(0xFFEADDFF))
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
                 Text(
-                    text = "Gereksinimler",
+                    text = "Gerekli İzinler",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = Color.White
+                    fontSize = 16.sp,
+                    color = Color(0xFF1D1B20)
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Spam panelinin ekran üzerinde çalışabilmesi için aşağıdaki iki iznin verilmesi zorunludur.",
+                    text = "Uygulamanın aktif otomasyon yapabilmesi için aşağıdaki koşullar gereklidir.",
                     fontSize = 12.sp,
-                    color = Color.LightGray,
-                    lineHeight = 18.sp
+                    color = Color(0xFF49454F),
+                    lineHeight = 16.sp
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -205,68 +346,105 @@ fun MainDashboardScreen(
                 // Permission Item 1
                 PermissionRow(
                     title = "Ekran Üstü Çizim İzni",
-                    desc = "Diğer uygulamaların üzerinde yüzen spam panelini göstermek için gereklidir.",
+                    desc = "Uygulamalar üzerinde yüzen kontrol panelini barındırmak için gereklidir.",
                     isGranted = hasOverlayPermission,
                     onGrantClick = onRequestOverlay
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
-
-                Divider(color = Color(0x1AFFFFFF))
-
+                HorizontalDivider(color = Color(0xFFEADDFF))
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // Permission Item 2
                 PermissionRow(
                     title = "Erişilebilirlik Servisi",
-                    desc = "Belirtilen koordinatlara otomatik tıklamak ve spam metinlerini yapıştırmak için gereklidir.",
+                    desc = "Koordinat bazlı dokunma ve otomatik giriş simülasyonları için kullanılır.",
                     isGranted = isAccessibilityEnabled,
                     onGrantClick = onRequestAccessibility
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
-        // System state info card
         val allGranted = hasOverlayPermission && isAccessibilityEnabled
+        val isOverlayVisible by SpamState.isOverlayVisible.collectAsState()
 
         AnimatedVisibility(
             visible = allGranted,
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically()
         ) {
-            Surface(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 24.dp),
-                shape = RoundedCornerShape(16.dp),
-                color = Color(0x334CAF50),
-                border = BorderStroke(1.dp, Color(0xFF4CAF50))
+                    .padding(bottom = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color(0xFFF1F8E9), // Light green elegant card
+                    border = BorderStroke(1.dp, Color(0xFFDCEDC8))
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = "Success",
-                        tint = Color(0xFF4CAF50),
-                        modifier = Modifier.size(32.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = "Asistan Hazır!",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp,
-                            color = Color.White
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = "Başarılı",
+                            tint = Color(0xFF4CAF50),
+                            modifier = Modifier.size(28.dp)
                         )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Asistan Hazır!",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = Color(0xFF2E7D32)
+                            )
+                            Text(
+                                text = "Gerekli tüm izinler sağlandı. Yüzen kontrol panelini istediğiniz zaman aşağıdaki butonla başlatabilirsiniz.",
+                                fontSize = 11.sp,
+                                color = Color(0xFF49454F),
+                                lineHeight = 15.sp
+                            )
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Button(
+                    onClick = {
+                        SpamState.isOverlayVisible.value = !isOverlayVisible
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isOverlayVisible) Color(0xFFBA1A1A) else Color(0xFF6750A4),
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = if (isOverlayVisible) Icons.Default.Close else Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Yüzen panel ekranınızda otomatik olarak açıldı. Hedef uygulamayı açıp spam yapmaya başlayabilirsiniz.",
+                            text = if (isOverlayVisible) "YÜZEN PANELİ KAPAT" else "YÜZEN PANELİ BAŞLAT",
                             fontSize = 12.sp,
-                            color = Color.LightGray,
-                            lineHeight = 16.sp
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.5.sp
                         )
                     }
                 }
@@ -276,40 +454,40 @@ fun MainDashboardScreen(
         // Guide / Manual Card
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            color = Color(0xFF161622),
-            tonalElevation = 2.dp
+            shape = RoundedCornerShape(24.dp),
+            color = Color(0xFFF7F2FA),
+            border = BorderStroke(1.dp, Color(0xFFEADDFF))
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
                 Text(
-                    text = "Nasıl Kullanılır?",
+                    text = "Asistan Kullanım Rehberi",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = Color.White
+                    fontSize = 16.sp,
+                    color = Color(0xFF1D1B20)
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 GuideStep(
                     number = "1",
-                    text = "Yukarıdaki bölümlerden her iki izni de aktif edin."
+                    text = "Gerekli iki izni yukarıdan aktif edin. Panel otomatik olarak ekrana yerleşecektir."
                 )
                 GuideStep(
                     number = "2",
-                    text = "Ekrandaki yüzen panelde yer alan kilit ikonuna (🔒) basarak panel klavyeyi aktifleştirin ve spam metninizi ve tekrar sayısını girin."
+                    text = "Yüzen panel üstünde yer alan kilit butonuna (🔒) tıklayarak klavye odağını açın ve spam metnini, sayısını, hız ayarlarını yapın."
                 )
                 GuideStep(
                     number = "3",
-                    text = "Target uygulamanızı (oyun, mesajlaşma) açıp 'Metin Alanını İşaretle' butonuna basın ve ardından 3 saniye içinde spam yapılacak metin kutusunun üzerine tıklayın."
+                    text = "Metin Alanını İşaretle butonuna basıp, 3 saniyelik sayaç bitiminde hedef uygulamanın (messenger veya chat arayüzündeki) mesaj yazma alanına tıklayın."
                 )
                 GuideStep(
                     number = "4",
-                    text = "'Başlat' (▶) butonuna dokunarak spam işlemini arka planda başlatabilirsiniz. 'Durdur' (⏸) ile dilediğiniz an durdurabilirsiniz."
+                    text = "Artık 'Başlat' butonuna tıklayarak milisaniye gecikmeli spam döngülerini arka planda güvenle yürütebilirsiniz."
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(30.dp))
     }
 }
 
@@ -328,7 +506,7 @@ fun PermissionRow(
             modifier = Modifier
                 .size(36.dp)
                 .background(
-                    if (isGranted) Color(0x334CAF50) else Color(0x33F44336),
+                    if (isGranted) Color(0xFFE8F5E9) else Color(0xFFFFEBEE),
                     shape = CircleShape
                 ),
             contentAlignment = Alignment.Center
@@ -336,25 +514,25 @@ fun PermissionRow(
             Icon(
                 imageVector = if (isGranted) Icons.Default.Check else Icons.Default.Warning,
                 contentDescription = null,
-                tint = if (isGranted) Color(0xFF4CAF50) else Color(0xFFF44336),
-                modifier = Modifier.size(20.dp)
+                tint = if (isGranted) Color(0xFF2E7D32) else Color(0xFFC62828),
+                modifier = Modifier.size(18.dp)
             )
         }
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(14.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
-                color = Color.White
+                color = Color(0xFF1D1B20)
             )
             Text(
                 text = desc,
                 fontSize = 11.sp,
-                color = Color.Gray,
-                lineHeight = 15.sp
+                color = Color(0xFF49454F),
+                lineHeight = 14.sp
             )
         }
 
@@ -363,22 +541,22 @@ fun PermissionRow(
         if (!isGranted) {
             Button(
                 onClick = onGrantClick,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF)),
-                shape = RoundedCornerShape(8.dp),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6750A4)),
+                shape = RoundedCornerShape(10.dp),
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
                 modifier = Modifier.height(32.dp)
             ) {
                 Text(
                     text = "İzin Ver",
                     fontSize = 11.sp,
-                    color = Color.Black,
-                    fontWeight = FontWeight.SemiBold
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
                 )
             }
         } else {
             Icon(
                 imageVector = Icons.Default.CheckCircle,
-                contentDescription = "Success",
+                contentDescription = "Aktif",
                 tint = Color(0xFF4CAF50),
                 modifier = Modifier.size(24.dp)
             )
@@ -397,7 +575,7 @@ fun GuideStep(number: String, text: String) {
         Box(
             modifier = Modifier
                 .size(22.dp)
-                .background(Color(0xFFE040FB), shape = CircleShape),
+                .background(Color(0xFF6750A4), shape = CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -411,7 +589,7 @@ fun GuideStep(number: String, text: String) {
         Text(
             text = text,
             fontSize = 13.sp,
-            color = Color.LightGray,
+            color = Color(0xFF49454F),
             lineHeight = 18.sp,
             modifier = Modifier.weight(1f)
         )
