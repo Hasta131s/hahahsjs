@@ -25,6 +25,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -645,6 +646,7 @@ fun FloatingPanelContent(
     Card(
         modifier = Modifier
             .width(282.dp)
+            .heightIn(max = 380.dp)
             .padding(4.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF2C2A35)), // Deep Polish charcoal-purple
@@ -729,8 +731,15 @@ fun FloatingPanelContent(
                 }
             }
 
-            // Input Fields area
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            // Scrollable Content Column
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f, fill = false)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                // Input Fields area
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 // Text Field Input
                 TextField(
                     value = textInput,
@@ -1199,6 +1208,7 @@ fun FloatingPanelContent(
                         )
                     }
                 }
+            }
             }
         }
     }
